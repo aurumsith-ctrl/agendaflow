@@ -1,5 +1,22 @@
 from tarfile import data_filter
 
+import json
+
+AQUIVOS_DADOS = "agendamentos.json"
+
+def carregar_agendamentos():
+    try:
+        with open(AQUIVOS_DADOS, "r", encoding="utf-8") as arquivo:
+            return json.load(arquivo)
+
+    except FileNotFoundError:
+        return []
+
+
+def salvar_agendamentos(agendamentos):
+    with open(AQUIVOS_DADOS, "w", encoding="utf-8") as arquivo:
+        json.dump(agendamentos, arquivo, ensure_ascii=False, indent=4)
+
 
 def mostrar_menu():
     """Exibe as opções do sistema."""
@@ -35,6 +52,7 @@ def cadastrar_agendamento(agendamentos):
     }
 
     agendamentos.append(agendamento)
+    salvar_agendamentos(agendamentos)
 
     print(f"Agendamento de {nome} cadastrado com sucesso!")
 
@@ -100,13 +118,14 @@ def cancelar_agendamento(agendamentos):
     for agendamento in agendamentos:
         if agendamento["id"] == id_cancelar:
             agendamento["status"] = "Cancelado"
+            salvar_agendamentos(agendamentos)
             print('Agendamento cancelado com sucesso!')
             return
     print("Agendamento não encontrado.")
 
 def main():
     """Controla a execução do programa."""
-    agendamentos = []
+    agendamentos = carregar_agendamentos()
 
     print("Bem-vindo ao AgendaFlow!")
 
