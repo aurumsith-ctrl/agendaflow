@@ -1,34 +1,6 @@
-import json
 from datetime import datetime
-
-AQUIVOS_DADOS = "agendamentos.json"
-
-SERVICOS = {
-    "1": {"nome": "Corte de Cabelo", "preco": 40.00},
-    "2": {"nome": "Barba Completa", "preco": 25.00},
-    "3": {"nome": "Limpeza de Pele", "preco": 40.00},
-    "4": {"nome": "Cabelo e barba", "preco": 60.00},
-}
-
-HORARIOS_PADRAO = [
-    "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00",
-    "15:00", "16:00", "17:00", "18:00", "19:00", "20:00",
-]
-
-
-def carregar_agendamentos():
-    """Carrega os agendamentos do arquivo JSON."""
-    try:
-        with open(AQUIVOS_DADOS, "r", encoding="utf-8") as arquivo:
-            return json.load(arquivo)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
-
-
-def salvar_agendamentos(agendamentos):
-    """Salva a lista de agendamentos no arquivo JSON."""
-    with open(AQUIVOS_DADOS, "w", encoding="utf-8") as arquivo:
-        json.dump(agendamentos, arquivo, ensure_ascii=False, indent=4)
+from models import Agendamento, SERVICOS, HORARIOS_PADRAO
+from database import carregar_agendamentos, salvar_agendamentos
 
 
 def obter_horario_disponiveis(data, agendamentos):
@@ -116,15 +88,15 @@ def cadastrar_agendamento(agendamentos):
     # 4. Criando e Salvando o Agendamento
     proximo_id = max([a["id"] for a in agendamentos], default=0) + 1
 
-    agendamento = {
-        "id": proximo_id,
-        "nome": nome,
-        "servico": servico_escolhido["nome"],
-        "preco": servico_escolhido["preco"],
-        "data": data,
-        "hora": hora_escolhida,
-        "status": "Agendado"
-    }
+    agendamento = Agendamento(
+        id=proximo_id,
+        nome=nome,
+        servico=servico_escolhido["nome"],
+        preco=servico_escolhido["preco"],
+        data=data,
+        hora=hora_escolhida,
+        status="Agendado"
+    )
 
     agendamentos.append(agendamento)
     salvar_agendamentos(agendamentos)
@@ -214,7 +186,7 @@ def cancelar_agendamento(agendamentos):
                 print("Este agendamento já estava cancelado.")
                 return
 
-            agendamento["status"] = "Cancelado"
+            agendamento.cancelar()
             salvar_agendamentos(agendamentos)
             print(f"Agendamento #{id_cancelar} cancelado com sucesso!")
             return
