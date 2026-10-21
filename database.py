@@ -1,22 +1,67 @@
-import json
+import sqlite3
 from models import Agendamento
 
-ARQUIVO_DADOS = "agendamentos.json"
+BANCO_DADOS = "agendaflow.db"
+
+def conectar():
+    """Abre a conexão com o banco SQLite e garante que a tabela exista"""
+    conexao = sqlite3.connect(BANCO_DADOS)
+    cursor = conexao.cursor()
+
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS agendamentos (
+        id INTEGER PRIMARY KEY,
+        nome TEXT NOT NULL,
+        servico TEXT NOT NULL,
+        preco REAL NOT NULL,
+        data TEXT NOT NULL,
+        hora TEXT NOT NULL,
+        status TEXT NOT NULL
+    )
+    """)
+
+    conexao.commit()
+    return conexao
+
 
 def carregar_agendamentos():
-    """Lê o JSON e transforma cada item em um Objeto da classe Agendamento"""
-    try:
-        with open(ARQUIVO_DADOS, "r", encoding="utf-8") as f:
-            dados = json.load(f)
-            # Transforma a lista de dicionários em lista de objetos Afendamento
-            return [Agendamento.from_dict(d) for d in dados]
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
+    """Busca todas as linhas da tabela e transforma em objetos Agendamento."""
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    cursor.execute('SELECT id, nome, servico, preco, data, hora, status FROM agendamentos')
+    linhas = cursor.fetchall()
+    conexao.close()
+
+    agendamentos = []
+    for l in linhas:
+        agendamento = Agendamento(
+            id=l[0],
+            nome=l[1],
+            servico=l[2],
+            preco=l[3],
+            data=l[4],
+            hora=l[5],
+            status=l[6]
+        )
+        agendamentos.append(agendamento)
+
+    return agendamentos
+
 
 def salvar_agendamentos(agendamentos):
-    """Converte os Objetos em dicionários e grava no arquivo JSON"""
-    with open(ARQUIVO_DADOS, "w", encoding="utf-8") as f:
-        # Chama .to_dict() em cada agendamento (compatível com objetos e dicts)
-        dados = [a.to_dict() if hasattr(a, "to_dict") else a for a in agendamentos]
-        json.dump(dados, f, ensure_ascii=False, indent=4)
+    """Salva ou atualiza os objetos Agendamento no banco de dados."""
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    for a in agendamentos:
+        cursor.execute("""
+        INSERT OR REPLACE INTO agendamentos (id, nome, servico, preco, data, hora, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (a.id, a.nome, a.servico, a.preco, a.data, a.hora, a.status))
+
+    conexao.commit()
+    conexao.close()
+
 
